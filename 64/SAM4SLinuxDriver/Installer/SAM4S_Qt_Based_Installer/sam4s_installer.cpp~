@@ -1,0 +1,1113 @@
+#include "sam4s_installer.h"
+#include "ui_sam4s_installer.h"
+
+int SAM4S_Installer::ScreenPos = INS_MAIN_SCREEN;
+
+/*
+
+ Function Name : SAM4S_Installer()
+
+ Input: NONE
+
+ Return Value: parent widget.
+
+ Description: Ths is the constrcutor function.It will create the initial settings of the UI.
+              And it has the signal and slot definition.
+
+ */
+
+SAM4S_Installer::SAM4S_Installer(QWidget *parent) :
+    QMainWindow(parent),
+    ui(new Ui::SAM4S_Installer)
+{
+    ui->setupUi(this);
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
+    //setWindowFlags(Qt::Window | Qt::WindowStaysOnTopHint);
+
+    setFixedSize(559,337);
+
+    QApplication::setStyle(new QWindowsStyle);
+    ui->USBPrinterRadioButton->setChecked(true);
+    //ui->BackButton->setDisabled(true);
+    ui->PrinterModelDropBox->setCurrentIndex(PM_ELLIX40);
+    ui->InstallerScreen->setCurrentIndex(INS_MAIN_SCREEN);
+
+    //QRegExpValidator *ipValidator = new QRegExpValidator(this);
+    ipValidator = NULL;
+    ipValidator = new QRegExpValidator(this);
+    QRegExp rxIP("((1{0,1}[0-9]{0,2}|2[0-4]{1,1}[0-9]{1,1}|25[0-5]{1,1})\\.){3,3}(1{0,1}[0-9]{0,2}|2[0-4]{1,1}[0-9]{1,1}|25[0-5]{1,1})");
+    ipValidator->setRegExp(rxIP);
+    ui->IPLineEdit->setValidator(ipValidator);
+    //ipValidator->deleteLater();
+
+    //QRegExpValidator *PortValidator = new QRegExpValidator(this);
+    PortValidator = NULL;
+    PortValidator = new QRegExpValidator(this);
+    QRegExp rxPort("[0-9][0-9][0-9][0-9]");
+    PortValidator->setRegExp(rxPort);
+    ui->PortNumberLineEdit->setValidator(PortValidator);
+    //PortValidator->deleteLater();
+
+    ui->SetupOkMSG->setText(DRIVER_INSTALLED_MSG);
+    ui->SetupFailedMsg->setText(DRIVER_FAILED_MSG);
+    ui->VersionString->setText(DRIVER_VERSION);
+
+    QObject::connect(ui->InstallerScreen,SIGNAL(currentChanged(int)),this,SLOT(InstallerPageChanged(int)));
+    QObject::connect(ui->SerialResetBtn,SIGNAL(clicked()),this,SLOT(SerialResetBtnClicked()));
+    QObject::connect(ui->PrinterModelDropBox,SIGNAL(currentIndexChanged(int)),this,SLOT(ProcessModelIndexChanges()));
+    QObject::connect(ui->ResetButton,SIGNAL(clicked()),this,SLOT(EthernetResetButtonClicked()));
+
+    QObject::connect(ui->ComCancelBtn,SIGNAL(clicked()),this,SLOT(ProcessCancelAction()));
+    QObject::connect(ui->NetCancelBtn,SIGNAL(clicked()),this,SLOT(ProcessCancelAction()));
+    QObject::connect(ui->CancelButton,SIGNAL(clicked()),this,SLOT(ProcessCancelAction()));
+    QObject::connect(ui->LPTCancelBtn,SIGNAL(clicked()),this,SLOT(ProcessCancelAction()));
+    QObject::connect(ui->MdlCancelBtn,SIGNAL(clicked()),this,SLOT(ProcessCancelAction()));
+
+    QObject::connect(ui->MdlNextBtn,SIGNAL(clicked()),this,SLOT(MoveToPrinterSelection()));
+    QObject::connect(ui->NextButton,SIGNAL(clicked()),this,SLOT(MoveToNextScreen()));
+    QObject::connect(ui->NetNextBtn,SIGNAL(clicked()),this,SLOT(AddEtherNetPrinter()));
+    QObject::connect(ui->ComNextBtn,SIGNAL(clicked()),this,SLOT(AddSerialPrinter()));
+    QObject::connect(ui->LPTNextBtn,SIGNAL(clicked()),this,SLOT(AddParallelPrinter()));
+
+    QObject::connect(ui->BackButton,SIGNAL(clicked()),this,SLOT(MoveToPreviousScreen()));
+    QObject::connect(ui->ComBackBtn,SIGNAL(clicked()),this,SLOT(MoveToPreviousScreen()));
+    QObject::connect(ui->NetBackBtn,SIGNAL(clicked()),this,SLOT(MoveToPreviousScreen()));
+    QObject::connect(ui->LPTBackBtn,SIGNAL(clicked()),this,SLOT(MoveToPreviousScreen()));
+
+    QObject::connect(ui->FinishButton_Ok,SIGNAL(clicked()),this,SLOT(close()));
+    QObject::connect(ui->Finish_cancel,SIGNAL(clicked()),this,SLOT(close()));
+
+    QObject::connect(ui->USBPrinterRadioButton,SIGNAL(clicked()),this,SLOT(USBRadioBtnClicked()));
+    QObject::connect(ui->EthernetPrinterRadioButton,SIGNAL(clicked()),this,SLOT(EthernetRadioBtnClicked()));
+    QObject::connect(ui->SerialPrinterRadioButon,SIGNAL(clicked()),this,SLOT(SerialRadioBtnClicked()));
+    QObject::connect(ui->ParallelPrinterradioButton,SIGNAL(clicked()),this,SLOT(ParallelRadioBtnClicked()));
+}
+
+/*
+
+ Function Name : SAM4S_Installer()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: destructor function.It will deallocates memory used by the UI componentes.
+
+ */
+
+SAM4S_Installer::~SAM4S_Installer()
+{
+    if(ipValidator != NULL)
+    {
+        delete ipValidator;
+        ipValidator = NULL;
+    }
+
+    if(PortValidator != NULL)
+    {
+        delete PortValidator;
+        PortValidator = NULL;
+    }
+    delete ui;
+}
+
+/*
+
+ Function Name : MoveToPrinterSelection()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: This function will handle the event for clicking the next button.
+
+ */
+
+void SAM4S_Installer::MoveToPrinterSelection()
+{
+    //lstPrinterLsit.clear();
+    ui->InstallerScreen->setCurrentIndex(INS_PRINTER_SELECTION_SCREEN);
+
+}
+
+
+void SAM4S_Installer::USBRadioBtnClicked()
+{
+    //ScreenPos = INS_MAIN_SCREEN;
+}
+
+/*
+
+ Function Name : EthernetRadioBtnClicked()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: Setter method.It will set the value while clicking eternet radio button.
+
+ */
+
+void SAM4S_Installer::EthernetRadioBtnClicked()
+{
+    ScreenPos = INS_ETHERNET_SCREEN;
+}
+
+/*
+
+ Function Name : SerialRadioBtnClicked()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: Setter method.It will set the value while clicking serial radio button.
+
+ */
+
+void SAM4S_Installer::SerialRadioBtnClicked()
+{
+    ScreenPos = INS_SERIAL_SCREEN;
+}
+
+/*
+
+ Function Name : ParallelRadioBtnClicked()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: Setter method.It will set the value while clicking parallel radio button.
+
+ */
+
+void SAM4S_Installer::ParallelRadioBtnClicked()
+{
+    ScreenPos = INS_PARALLEL_SCREEN;
+}
+
+
+/*
+
+ Function Name : EthernetResetButtonClicked()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: It will handel the even raised by the reset button in ethernet screen.
+              It will clear the port number field and IP address field.
+
+ */
+
+void SAM4S_Installer::EthernetResetButtonClicked()
+{
+    ui->IPLineEdit->clear();
+    ui->PortNumberLineEdit->clear();
+}
+
+/*
+
+ Function Name : SerialResetBtnClicked()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: It will handel the even raised by the reset button in serial screen.
+              It will set the default value for serial port settings field.
+
+ */
+
+void SAM4S_Installer::SerialResetBtnClicked()
+{
+    ui->DataBitDropBox->setCurrentIndex(1);
+    ui->ComPortNumberDropBox->setCurrentIndex(DEFAULT_VALUE);
+    ui->FlowControlDropBox->setCurrentIndex(DEFAULT_VALUE);
+    ui->ParityDropBox->setCurrentIndex(DEFAULT_VALUE);
+    ui->StopBitDropBox->setCurrentIndex(DEFAULT_VALUE);
+    ui->BaudRateDropBox->setCurrentIndex(4);
+}
+
+/*
+
+ Function Name : AddEtherNetPrinter()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: This function will add the ethernet printer based on user inputs such as
+              IP address and port number.If the printer already installed , it will install
+              as copy of the printer.
+
+ */
+
+bool SAM4S_Installer::AddEtherNetPrinter()
+{
+    bool bRetn = false;
+    QString PrinterName = NULL;
+    int i = 0;
+    int j = 1;
+        bool bFound = false;
+    if(ui->IPLineEdit->text().isEmpty() || ui->IPLineEdit->text().isNull() ||
+       ui->PortNumberLineEdit->text().isEmpty() || ui->PortNumberLineEdit->text().isNull())
+    {
+        QMessageBox::warning(this, tr(DIALOG_HEADER),
+                                           tr(ETHERNET_ERR_MSG),
+                                           QMessageBox::Ok,
+                                           QMessageBox::Ok);
+        return bRetn ;
+    }
+
+
+
+
+    PrinterName = CreatePrinterName(ui->PrinterModelDropBox->currentText(),"ETHERNET");
+    if(PrinterName == NULL)
+    {
+        qDebug()<<"Invalid printer name \n";
+        return false;
+    }
+
+    qDebug()<<"Total printers available is "<<lstPrinterLsit.size()<<endl;
+
+    if(lstPrinterLsit.size() == 0)
+    {
+        qDebug()<<"Printer name to be install is "<<PrinterName<<endl;
+        //return bRetn;
+    }
+    else
+    {
+        QString Temp = PrinterName;
+        for(i = 0;i<lstPrinterLsit.size();i++)
+        {
+
+                if(lstPrinterLsit.at(i).compare(Temp) == 0)
+                    {
+                        Temp = PrinterName+"_"+QString::number(j);
+                        j++;
+                        //bFound = true;
+                    }
+                else
+                    {
+                    if(i != 0)
+                        PrinterName = PrinterName+"_"+QString::number(i);
+                        bFound = true;
+                        break;
+                    }
+
+        }
+
+        if(!bFound)
+        {
+            PrinterName = PrinterName+"_"+QString::number(i);
+        }
+    }
+    qDebug()<<"Printer name is "<<PrinterName<<endl;
+    QString szPrinterURI;
+    QString szPPDFile;
+    szPrinterURI ="socket://"+ui->IPLineEdit->text()+":"+ui->PortNumberLineEdit->text();
+    qDebug()<<"Printer URI is "<<szPrinterURI<<endl;
+    szPPDFile = "SAM4s_"+ui->PrinterModelDropBox->currentText()+".ppd";
+    qDebug()<<"PPD file name is "<<szPPDFile<<endl;
+    bRetn = AddPrinter(PrinterName,szPrinterURI,szPPDFile);
+
+    if(bRetn == false)
+    {
+        ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_ERROR_SCREEN);
+
+        qDebug()<<"installation failed\n";
+    }
+    else
+    {
+        qDebug()<<"Printer added successfuly\n";
+        //close();
+        ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_OK_SCREEN);
+    }
+
+    return bRetn;
+}
+
+/*
+
+ Function Name : AddSerialPrinter()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: This function will add the serial printer based on serial port settings
+              selected by the user.If the printer already installed , it will install
+              as copy of the printer.
+
+ */
+
+bool SAM4S_Installer::AddSerialPrinter()
+{
+    bool bRetn = false;
+    bool bFound = false;
+    QString PrinterName = NULL;
+    QString szPrinterURI = NULL;
+    QString szPPDFile = NULL;
+    int  j = 1;
+    int i;
+
+    if(ui->ComPortNumberDropBox->count() == 0)
+    {
+        QMessageBox::warning(this, tr(DIALOG_HEADER),
+                                           tr(SERIAL_ERR_MSG),
+                                           QMessageBox::Ok,
+                                           QMessageBox::Ok);
+        return bRetn ;
+    }
+
+    PrinterName = CreatePrinterName(ui->PrinterModelDropBox->currentText(),"SERIAL");
+    if(PrinterName == NULL)
+    {
+        qDebug()<<"Invalid printer name \n";
+        return false;
+    }
+    //qDebug()<<"Total printers available is "<<lstPrinterLsit.size()<<endl;
+
+    if(lstPrinterLsit.size() == 0)
+    {
+        qDebug()<<"Printer name to be install is "<<PrinterName<<endl;
+        //return bRetn;
+    }
+    else
+    {
+        QString Temp = PrinterName;
+        for(i = 0;i<lstPrinterLsit.size();i++)
+        {
+
+                if(lstPrinterLsit.at(i).compare(Temp) == 0)
+                    {
+                        Temp = PrinterName+"_"+QString::number(j);
+                        j++;
+                        //bFound = true;
+                    }
+                else
+                    {
+                    if(i != 0)
+                        PrinterName = PrinterName+"_"+QString::number(i);
+                        bFound = true;
+                        break;
+                    }
+
+        }
+
+        if(!bFound)
+        {
+            PrinterName = PrinterName+"_"+QString::number(i);
+        }
+    }
+    qDebug()<<"Printer name is "<<PrinterName<<endl;
+    szPrinterURI ="serial:"+ui->ComPortNumberDropBox->currentText()+"?baud="+ui->BaudRateDropBox->currentText() +
+            "+bits="+ui->DataBitDropBox->currentText()+"+parity="+ui->ParityDropBox->currentText()+"+flow=hard";
+    qDebug()<<"Printer URI is "<<szPrinterURI<<endl;
+    szPPDFile = "SAM4s_"+ui->PrinterModelDropBox->currentText()+".ppd";
+    qDebug()<<"PPD file name is "<<szPPDFile<<endl;
+    bRetn = AddPrinter(PrinterName,szPrinterURI,szPPDFile);
+
+    if(bRetn == false)
+    {
+        ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_ERROR_SCREEN);
+
+        qDebug()<<"installation failed\n";
+    }
+    else
+    {
+        qDebug()<<"Printer added successfuly\n";
+        //close();
+        ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_OK_SCREEN);
+    }
+
+    return bRetn;
+}
+
+/*
+
+ Function Name : AddParallelPrinter()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: This function will add the parallel printer based on parallel port number
+              selected by the user.If the printer already installed , it will install
+              as copy of the printer.
+
+ */
+
+bool SAM4S_Installer::AddParallelPrinter()
+{
+    bool bRetn = false;
+    bool bFound = false;
+    QString PrinterName = NULL;
+    int  j = 1;
+    int i  = 0;
+    PrinterName = CreatePrinterName(ui->PrinterModelDropBox->currentText(),"PARALLEL");
+    if(PrinterName == NULL)
+    {
+        qDebug()<<"Invalid printer name \n";
+        return false;
+    }
+    //qDebug()<<"Total printers available is "<<lstPrinterLsit.size()<<endl;
+
+    if(lstPrinterLsit.size() == 0)
+    {
+        qDebug()<<"Printer name to be install is "<<PrinterName<<endl;
+        //return bRetn;
+    }
+    else
+    {
+        QString Temp = PrinterName;
+        for(i = 0;i<lstPrinterLsit.size();i++)
+        {
+
+                if(lstPrinterLsit.at(i).compare(Temp) == 0)
+                    {
+                        Temp = PrinterName+"_"+QString::number(j);
+                        j++;
+                        //bFound = true;
+                    }
+                else
+                    {
+                    if(i != 0)
+                        PrinterName = PrinterName+"_"+QString::number(i);
+                        bFound = true;
+                        break;
+                    }
+
+        }
+
+        if(!bFound)
+        {
+            PrinterName = PrinterName+"_"+QString::number(i);
+        }
+    }
+
+    QString szPrinterURI;
+    QString szPPDFile;
+    szPrinterURI ="parallel:/dev/"+ui->LPTDropBox->currentText();
+    qDebug()<<"Printer URI is "<<szPrinterURI<<endl;
+    szPPDFile = "SAM4s_"+ui->PrinterModelDropBox->currentText()+".ppd";
+    qDebug()<<"PPD file name is "<<szPPDFile<<endl;
+    bRetn = AddPrinter(PrinterName,szPrinterURI,szPPDFile);
+
+    if(bRetn == false)
+    {
+        ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_ERROR_SCREEN);
+        qDebug()<<"installation failed\n";
+    }
+    else
+    {
+        qDebug()<<"Printer added successfuly\n";
+        //close();
+        ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_OK_SCREEN);
+    }
+    return bRetn;
+}
+
+/*
+
+ Function Name : MoveToNextScreen()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: This function will handle the event for clicking the next button.
+
+ */
+
+void SAM4S_Installer::MoveToNextScreen()
+{
+
+    if(ui->USBPrinterRadioButton->isChecked())
+    {
+        QMessageBox::StandardButton reply =  QMessageBox::information(this, tr(DIALOG_HEADER),
+                                                                             tr(USB_INSTALLATION_CONFIRMATION),
+                                                                             QMessageBox::Ok | QMessageBox::Cancel);
+        if(reply == QMessageBox::Cancel)
+            return ;
+
+       QMessageBox::information(this, tr(DIALOG_HEADER),
+                                      tr(USB_INSTALLATION_COMPLETE),
+                                      QMessageBox::Ok);
+
+           //close();
+       CopyDriverFiles();
+       ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_OK_SCREEN);
+       return ;
+    }
+
+    lstPrinterLsit.clear();
+    ui->InstallerScreen->setCurrentIndex(ScreenPos);
+    //qDebug()<<"INstalltion type is "<<ScreenPos<<endl;
+
+    lstPrinterLsit = GetPrinterList(ui->PrinterModelDropBox->currentText(),GetInstalltionType(ScreenPos));
+    SerialResetBtnClicked();
+
+   // qDebug()<<"Number of sam4s printer is "<<lstPrinterLsit.size();
+
+//    for(int i=0;i<lstPrinterLsit.size();i++)
+//    {
+//        qDebug()<<"Available SAM4S Printers are "<<lstPrinterLsit.at(i)<<endl;
+//    }
+}
+
+/*
+
+ Function Name : AddPrinter()
+
+ Input: Printer name , printer URI and PPD file path
+
+ Return Value: status of the add printer.
+
+ Description: This function will add the given printer into CUPS system.
+
+ */
+
+bool SAM4S_Installer::AddPrinter(QString szPrinterName, QString szPrinterURI, QString szPPDFilePath)
+{
+    bool bRet = false;
+    http_t *http = NULL;
+    ipp_status_t status;
+
+    if(szPrinterName.isEmpty() || szPrinterName.isNull()
+        || szPrinterURI.isEmpty() || szPrinterURI.isNull()
+        || szPPDFilePath.isEmpty() || szPPDFilePath.isNull())
+    {
+        qDebug()<<"Invalid arguments for Addprinter\n";
+        return bRet;
+    }
+
+    if(CopyDriverFiles())
+    {
+    ipp_t * pstRequest = NULL;
+    pstRequest = ippNew();
+    if(pstRequest == NULL)
+    {
+        qDebug()<<"Invalid IPP request\n";
+        return false;
+    }
+    http = httpConnectEncrypt("localhost", ippPort(), cupsEncryption());
+    if(http == NULL)
+    {
+        qDebug()<<"http connection failed\n";
+        return false;
+    }
+    pstRequest->request.op.operation_id = CUPS_ADD_PRINTER;
+    pstRequest->request.any.request_id  = 1;
+    ippAddString(pstRequest, IPP_TAG_OPERATION, IPP_TAG_CHARSET, "attributes-charset", NULL, "us-ascii");
+    ippAddString(pstRequest, IPP_TAG_OPERATION, IPP_TAG_LANGUAGE, "attributes-natural-language", NULL, "en");
+    ippAddString(pstRequest, IPP_TAG_OPERATION, IPP_TAG_NAME, "requesting-user-name", NULL, cupsUser());
+    ippAddString(pstRequest, IPP_TAG_OPERATION, IPP_TAG_URI, "device-uri", NULL, szPrinterURI.toAscii().data());
+    QString szDeviceURI = "ipp://localhost/printers/"+szPrinterName;
+    ippAddString(pstRequest, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, szDeviceURI.toAscii().data());
+    ippAddString(pstRequest, IPP_TAG_OPERATION, IPP_TAG_NAME,"ppd-name", NULL, szPPDFilePath.toAscii().data());
+    ippAddInteger(pstRequest, IPP_TAG_PRINTER, IPP_TAG_ENUM, "printer-state", IPP_PRINTER_IDLE);
+    ippAddBoolean(pstRequest, IPP_TAG_PRINTER, "printer-is-accepting-jobs", true);
+
+    ippDelete(cupsDoRequest(http, pstRequest, "/"));
+    //qDebug()<<"Add Printer status "<<cupsLastErrorString()<<endl;
+
+    status = cupsLastError();
+
+    //ippDelete(pstResponse);
+    httpClose(http);
+
+
+    if(status == IPP_OK)
+    {
+        return true;        
+    }
+    else
+        return false;
+    }
+
+    return bRet;
+}
+
+/*
+
+ Function Name : GetInstalltionType()
+
+ Input: Current screen number
+
+ Return Value: will return the installation type.
+
+ Description: This function will return the installation type based on printer UI selection.
+
+ */
+
+QString SAM4S_Installer::GetInstalltionType(int nScreen)
+{
+    QString temp = NULL;
+    switch(nScreen)
+    {
+    case INS_ETHERNET_SCREEN:
+        temp = "ETHERNET";
+        break;
+    case INS_SERIAL_SCREEN:
+        temp = "SERIAL";
+        break;
+    case INS_PARALLEL_SCREEN:
+        temp = "PARALLEL";
+        break;
+    case INS_MAIN_SCREEN:
+        temp = "USB";
+        break;
+    }
+    return temp;
+}
+
+/*
+
+ Function Name : MoveToPreviousScreen()
+
+ Input: NONE
+
+ Return Value: void.
+
+ Description: This function will handle the event set the screen to previous screen.
+
+ */
+
+void SAM4S_Installer::MoveToPreviousScreen()
+{
+    qDebug()<<"Current index is "<<ui->InstallerScreen->currentIndex()<<endl;
+    if(ui->InstallerScreen->currentIndex() > 1)
+        ui->InstallerScreen->setCurrentIndex(INS_PRINTER_SELECTION_SCREEN);
+    else if(ui->InstallerScreen->currentIndex()<=1)
+        ui->InstallerScreen->setCurrentIndex(INS_MAIN_SCREEN);
+
+}
+
+/*
+
+ Function Name : ProcessCancelAction()
+
+ Input: NONE
+
+ Return Value: void.
+
+ Description: This function will handle the cancel button action.
+
+ */
+
+void SAM4S_Installer::ProcessCancelAction()
+{
+     QMessageBox::StandardButton reply = QMessageBox::warning(this, tr(DIALOG_HEADER),
+                                   tr(PROCESS_CANCEL_MSG),
+                                   QMessageBox::Yes | QMessageBox::No,
+                                   QMessageBox::No);
+     if(reply == QMessageBox::Yes)
+        //close();
+         ui->InstallerScreen->setCurrentIndex(INS_FINISH_WITH_ERROR_SCREEN);
+}
+
+/*
+
+ Function Name : InstallerPageChanged()
+
+ Input: NONE
+
+ Return Value: Installer screen index.
+
+ Description: It will construct the available serial ports presnet in the system.
+
+ */
+
+void SAM4S_Installer::InstallerPageChanged(int PageNumber)
+{
+    //qDebug()<<"Page number is "<<PageNumber<<endl;
+    if(PageNumber == INS_SERIAL_SCREEN)
+    {
+        ui->ComPortNumberDropBox->clear();
+        ui->ComPortNumberDropBox->addItems(getComList());
+    }
+}
+
+/*
+
+ Function Name : ProcessModelIndexChanges()
+
+ Input: NONE
+
+ Return Value: NONE.
+
+ Description: This function will reset the printer type to USB , when the printer model index changed.
+
+ */
+
+void SAM4S_Installer::ProcessModelIndexChanges()
+{
+    ScreenPos = INS_MAIN_SCREEN;
+    ui->USBPrinterRadioButton->setChecked(true);
+}
+
+/*
+
+ Function Name : getComList()
+
+ Input: NONE
+
+ Return Value: List of com port presnets in the system.
+
+ Description: This function will return the list of com ports presnet in the system.
+
+ */
+
+QStringList SAM4S_Installer::getComList() {
+    int n;
+    struct dirent **namelist;
+    QStringList comList;
+    QStringList comList8250;
+    const char* sysdir = "/sys/class/tty/";
+
+    // Scan through /sys/class/tty - it contains all tty-devices in the system
+    n = scandir(sysdir, &namelist, NULL, NULL);
+    if (n < 0)
+        perror("scandir");
+    else {
+        while (n--) {
+            if (strcmp(namelist[n]->d_name,"..") && strcmp(namelist[n]->d_name,".")) {
+
+                // Construct full absolute file path
+                QString devicedir = sysdir;
+                devicedir += namelist[n]->d_name;
+
+                // Register the device
+                register_comport(comList, comList8250, devicedir);
+            }
+            free(namelist[n]);
+        }
+        free(namelist);
+    }
+
+    // Only non-serial8250 has been added to comList without any further testing
+    // serial8250-devices must be probe to check for validity
+    probe_serial8250_comports(comList, comList8250);
+
+    // Return the lsit of detected comports
+    return comList;
+}
+
+/*
+
+ Function Name : probe_serial8250_comports()
+
+ Input: string list of comports (ttyS* and ttyUSB* devices)
+
+ Return Value: installed printer list.
+
+ Description: This function will return only list of ttyS* devices present in the system.
+
+ */
+
+ void SAM4S_Installer::probe_serial8250_comports(QStringList& comList, QStringList comList8250) {
+    struct serial_struct serinfo;
+    QStringList::iterator it = comList8250.begin();
+
+
+    // Iterate over all serial8250-devices
+    while (it != comList8250.end()) {
+
+        // Try to open the device
+        int fd = open(((*it).toLocal8Bit().constData()), O_RDWR | O_NONBLOCK | O_NOCTTY);
+
+        if (fd >= 0) {
+            // Get serial_info
+            if (ioctl(fd, TIOCGSERIAL, &serinfo)==0) {
+                // If device type is no PORT_UNKNOWN we accept the port
+                if (serinfo.type != PORT_UNKNOWN)
+                    comList.push_back(*it);
+            }
+            ::close(fd);
+        }
+        it ++;
+    }
+}
+
+ /*
+
+  Function Name : get_driver()
+
+  Input: Refrence of tty driver list
+
+  Return Value: NONE.
+
+  Description: This function will return the list of tty driver list.
+
+  */
+
+  QString SAM4S_Installer::get_driver(const QString& tty) {
+     struct stat st;
+     QString devicedir = tty;
+
+     // Append '/device' to the tty-path
+     devicedir += "/device";
+
+     // Stat the devicedir and handle it if it is a symlink
+     if (lstat(devicedir.toAscii().data(), &st)==0 && S_ISLNK(st.st_mode)) {
+         char buffer[1024];
+         memset(buffer, 0, sizeof(buffer));
+
+         // Append '/driver' and return basename of the target
+         devicedir += "/driver";
+
+         if (readlink(devicedir.toAscii().data(), buffer, sizeof(buffer)) > 0)
+             return basename(buffer);
+     }
+     return "";
+ }
+
+  /*
+
+   Function Name : register_comport()
+
+   Input: com port list(ttyS* and ttyUSB*),8250 com port list,directory of the device
+
+   Return Value: void.
+
+   Description: This function will remove the devices from list which doesn't have the driver.
+
+   */
+
+ void SAM4S_Installer::register_comport( QStringList &comList, QStringList& comList8250, const QString& dir) {
+     // Get the driver the device is using
+     QString driver = get_driver(dir);
+
+     // Skip devices without a driver
+     if (driver.size() > 0) {
+         QString devfile = QString("/dev/") + basename(dir.toAscii().data());
+
+         // Put serial8250-devices in a seperate list
+         if (driver == "serial8250") {
+             comList8250.push_back(devfile);
+         } else
+             comList.push_back(devfile);
+     }
+ }
+
+ /*
+
+  Function Name : GetPrinterList()
+
+  Input: model name and installtion type of the printer
+
+  Return Value: installed printer list.
+
+  Description: This function will return the list of SAM4S printers installed in the system.
+
+  */
+
+ QStringList SAM4S_Installer::GetPrinterList(QString szModelName,QString szInstallationType)
+ {
+     //qDebug()<<"Model Name is "<<szModelName<<endl;
+    // qDebug()<<"Installation type is "<<szInstallationType<<endl;
+     QStringList PrinterName;
+    cups_dest_t *cDest;
+    int nDest = 0;
+    int j =0;
+    ppd_file_t *ppd = NULL;
+    ppd_attr_t *attr = NULL;
+    char buff[MAX_FILE_PATH] = { 0 };
+    memset(buff,0,1024);
+
+    //It will return configured printes in the system
+    nDest = cupsGetDests2(CUPS_HTTP_DEFAULT,&cDest);
+   // qDebug()<<"Number of printers found in the system is "<<nDest<<endl;
+
+    for(int i = 0;i <nDest;i++)
+    {
+        qDebug()<<"Printer name is "<<cDest[i].name<<endl;
+        readlink(cupsGetPPD2(CUPS_HTTP_DEFAULT, cDest[i].name), buff, MAX_FILE_PATH);
+        qDebug()<<"PPD name is "<<buff<<endl;
+        ppd = ppdOpenFile(buff);
+        if(ppd != NULL)
+        {
+
+        //The PCFileNmae Contains the Exact PPD name used to install the printer
+        for (attr = ppdFindAttr(ppd, "PCFileName", NULL);
+             attr != NULL;
+             attr = ppdFindNextAttr(ppd, "PCFileName", NULL))
+        {
+            //Here we are collecting the printer which uses our ppd
+            if(strcmp(attr->value,ELLIX30_PPD) == 0 ||
+               strcmp(attr->value,ELLIX32_PPD) == 0 ||
+               strcmp(attr->value,ELLIX35_PPD) == 0 ||
+               strcmp(attr->value,ELLIX40_PPD) == 0 ||
+               strcmp(attr->value,ELLIX42_PPD) == 0 ||
+               strcmp(attr->value,ELLIX45_PPD) == 0 ||
+               strcmp(attr->value,GIANT100_PPD) == 0)
+            {
+                QString temp(cDest[i].name);
+                if(temp.contains(szModelName) && temp.contains(szInstallationType))
+                {
+                PrinterName.insert(j,cDest[i].name);
+                j++;
+                }
+            }
+          //qDebug()<<"The value is "<< attr->value<<endl;
+        }
+
+        }
+        else
+            qDebug()<<"PPD open failed\n";
+        if(ppd != NULL)
+            ppdClose(ppd);
+         memset(buff,0,1024);
+    }
+    cupsFreeDests(nDest,cDest);
+    return PrinterName;
+ }
+
+ /*
+
+  Function Name : CreatePrinterName()
+
+  Input: model name and installtion type of the printer
+
+  Return Value: Printer name.
+
+  Description: This function will create the printer name based on model name and printer installation type.
+
+  */
+
+ QString SAM4S_Installer::CreatePrinterName(QString szModelName, QString szInstallationType)
+ {
+     QString szPrinterName = NULL;
+     szPrinterName = "SAM4S_"+szModelName+"_"+szInstallationType;
+    return szPrinterName;
+ }
+
+ /*
+
+  Function Name : CopyDriverFiles()
+
+  Input: NONE
+
+  Return Value: status of driver file copy operation.
+
+  Description: This function will copy the ppd files into /usr/share/cups/model directory.
+
+  */
+
+//2016_06_01 Hyunny modify.
+ bool SAM4S_Installer::CopyDriverFiles()
+ {
+     bool bCopyStatus = false;
+     QString PPDFileName = ui->PrinterModelDropBox->currentText()+".ppd";
+     QString szTemp = PPD_FILE_PATH+PPDFileName;
+     QString Filename = DRIVER_FILE_PATH+PPDFileName;
+     qDebug()<<"PPD PATH is "<<szTemp<<endl;
+     qDebug()<<"File name is "<<Filename<<endl;
+     qDebug()<<"destination file name is "<<szTemp<<endl;
+
+     if(QFile::exists(szTemp))
+     {
+         qDebug()<<"File already exist\n";
+         //return true;
+     }else {
+
+		bCopyStatus = QFile::copy(Filename, szTemp);
+		if(bCopyStatus == true)
+			qDebug()<<"Files copied successfully\n";
+		else
+		{
+			Filename = DRIVER_FILE_LOCAL_PATH+PPDFileName;
+			qDebug()<<"File name is "<<Filename<<endl;
+			bCopyStatus = QFile::copy(Filename, szTemp);
+			if(bCopyStatus == true)
+				qDebug()<<"Files copied successfully\n";
+			else
+				qDebug()<<"Files copy failed\n";
+		}
+	}
+
+	//Copy Raster File
+	szTemp = INSTALLED_RASTER_FILE_PATH
+	if(QFile::exists(szTemp))
+     {
+         qDebug()<<"RasterToSPrinter File already exist\n";
+         //return true;
+     }else {
+
+		Filename = RASTER_FILE_PATH;
+		bCopyStatus = QFile::copy(Filename, szTemp);
+		if(bCopyStatus == true)
+			qDebug()<<"RasterToSPrinter Files copied successfully\n";
+		else
+		{
+			qDebug()<<"RasterToSPrinter Files copy failed\n";
+		}
+	}
+	
+	//RASTER_FILE_PATH;	
+
+	       
+	return bCopyStatus;
+
+ }
+
+// QString SAM4S_Installer::GetPrinterName(QStringList lAvaliablePrinter,int nInstallationType,QString szModel)
+// {
+//     QStringList tempList;
+//     int i = 0;
+//     int j = 0;
+//     switch(nInstallationType)
+//     {
+//     case PT_USB_PRINTER:
+//         for(i = 0;i<lAvaliablePrinter.size();i++)
+//         {
+//             if(lAvaliablePrinter.at(i).contains("USB") && lAvaliablePrinter.at(i).contains(szModel))
+//             {
+//                tempList.insert(j,lAvaliablePrinter.at(i));
+//                j++;
+//             }
+//         }
+//         break;
+
+//     case PT_SERIAL_PRINTER:
+//         for(i = 0;i<lAvaliablePrinter.size();i++)
+//         {
+//             if(lAvaliablePrinter.at(i).contains("Serial") && lAvaliablePrinter.at(i).contains(szModel))
+//             {
+//                tempList.insert(j,lAvaliablePrinter.at(i));
+//                j++;
+//             }
+//         }
+//         break;
+
+
+//     case PT_ETHERNET_PRINTER:
+//         for(i = 0;i<lAvaliablePrinter.size();i++)
+//         {
+//             if(lAvaliablePrinter.at(i).contains("Ethernet") && lAvaliablePrinter.at(i).contains(szModel))
+//             {
+//                tempList.insert(j,lAvaliablePrinter.at(i));
+//                j++;
+//             }
+//         }
+//         break;
+
+
+//     case PT_PARALLEL_PRINTER:
+//         for(i = 0;i<lAvaliablePrinter.size();i++)
+//         {
+//             if(lAvaliablePrinter.at(i).contains("Parallel") && lAvaliablePrinter.at(i).contains(szModel))
+//             {
+//                tempList.insert(j,lAvaliablePrinter.at(i));
+//                j++;
+//             }
+//         }
+//         break;
+
+//     }
+
+// }
