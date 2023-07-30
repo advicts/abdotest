@@ -1,0 +1,2 @@
+KERNEL=="lp*" MODE="0777"
+
