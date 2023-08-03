@@ -1,1 +1,0 @@
-MODE="0666" SYMLINK+="SAM4S_USB", SUBSYSTEM=="usb" ATTRS{idVendor}=="1c8a"
