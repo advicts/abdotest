@@ -1,5 +1,0 @@
-# options: -translation lf -encoding utf-8
-
-/etc/SAM4S_Ellix40S/rastertoelix40s 1B0CB255-FFD8-DFF9-F027-98399AD280DC zlib
-/etc/SAM4S_Ellix40S/SAM4S_Ellix_40S.ppd 9BA9CDEB-A86A-444E-771C-3260A79E078D zlib
-/etc/SAM4S_Ellix40S/Ellix40S_Serial.rules EF2AE617-A049-AE2E-D8AC-0019AE7D33BE zlib
